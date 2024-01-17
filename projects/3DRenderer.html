@@ -1,0 +1,130 @@
+<html>
+<head>
+	<title>Matthew Haywood - 3D Graphics Engine</title>
+	<link rel="stylesheet" href="../stylesheets/style.css">
+	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class='container'>
+	<h2>3D Graphics Engine</h2>
+	<p>A 3D graphics engine is used to transform 3D shapes and objects into 2D coordinates and render onto a 2D screen. 3D graphics engines are used in gaming engines, Computer Aided Design (CAD) software, medical applications and many other applications.</p>
+	<p> I decided to design and implement a 3D graphics engine after completing a similar project at university using already existing libraries. I wanted to easily create 3D applications such as games or 3D Visualizations. I decided to use Python because it is quick and easy to work with, supports object oriented design and is easy to setup. I chose to implement the engine from scratch because I found the already available 3D python libraries complex and difficult to understand.
+	</p>
+
+	<h3>Nodes, Edges and Faces</h3>
+	<p>A <em>Node</em> is used to represent a single point in 3D space (x, y and z). An <em>Edge</em> is used to represent an edge of an object and connects two nodes together. A <em>Face</em> is used to represent the solid faces of an object, for example the sides of a cube. </p>
+	<p>
+		For drawing to the screen, I chose to use PyGame as I have experience using the basic draw functions.
+	</p>
+	<p>In PyGame, a Node, Edge and Face can be drawn to the screen using: </p>
+	<pre><code>pygame.draw.circle(self.screen, wireframe.nodeColour, (int(node[0]), int(node[1])), wireframe.nodeRadius, 0)</code></pre>
+	<pre><code>pygame.draw.aaline(self.screen, wireframe.edgeColour, outputPoints[0][:2], outputPoints[1][:2], 1)</code></pre>
+	<pre><code>pygame.draw.polygon(self.screen, shading, [iPerspective[0][:2], iPerspective[1][:2], iPerspective[2][:2]], 0)</code></pre>
+
+	<h3>Transformation Matrices</h3>
+	<p>Transformation matrices are used to manipulate, rotate and resize the models onscreen. They can also be used to make the models look immersive. Matrices are used because it is more performant when scaling and rotating tens of thousands of nodes, edges and faces simultaneously.</p>
+
+	<p> The most basic matrices required for the 3D Graphics Engine are the <em>Translation</em>, <em>Scale</em> and <em>Rotation</em> matrices.</p>
+
+	<p>
+    \[T =
+    \begin{bmatrix}
+    1 & 0 & 0 & 0\\
+    0 & 1 & 0 & 0\\
+    0 & 0 & 1 & 0 \\
+    dx & dy & dz & 1
+    \end{bmatrix}\]
+	</p>
+
+	<p>
+    \[S =
+    \begin{bmatrix}
+    sx & 0 & 0 & 0\\
+    0 & sy & 0 & 0\\
+    0 & 0 & sz & 0 \\
+    0 & 0 & 0 & 1
+    \end{bmatrix}\]
+	</p>
+
+	<p> \[R_x =
+    \begin{bmatrix}
+    1 & 0 & 0 & 0\\
+    0 & cos\theta & -sin\theta & 0\\
+    0 & sin\theta & cos\theta & 0 \\
+    0 & 0 & 0 & 1
+    \end{bmatrix}\]
+	</p>
+
+	<p>
+    \[R_y =
+    \begin{bmatrix}
+    cos\theta & 0 & sin\theta & 0\\
+    0 & 1 & 0 & 0\\
+    -sin\theta & 0 & cos\theta & 0 \\
+    0 & 0 & 0 & 1
+    \end{bmatrix}\]
+</p>
+	<p>
+    \[R_z =
+    \begin{bmatrix}
+    cos\theta & -sin\theta & 0 & 0\\
+    sin\theta & cos\theta & 0 & 0\\
+    0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 1
+    \end{bmatrix}\]
+</p>
+	<h3>Clipping</h3>
+	
+	<p>Clipping is used to stop objects out of view from being inverted back onto the screen and also stops calculations being performed on out of view objects, increasing the overall performance of the program.</p>
+
+	<p>Faces of objects are clipped against a plane in the Z axis, so that they don't go behind the camera. However, we need to makesure that faces halfway across the plane are still rendered up to the plane edge.</p>
+
+	<p>A face is placed into one of four situations:</p>
+
+	<ul>
+		<li>All three of the faces nodes are inside the clipping plane.</li>
+		<li>One of the points is outside the plane and two are inside the plane.</li>
+		<li>Two of the points are outside the plane and one is inside the plane.</li>
+		<li>All three points of the face are outside the plane.</li>
+	</ul>
+	<p>If all of the nodes are inside the plane then the triangle passes and renders as normal. If all of the nodes are outside the triangle then the triangle is discarded and is not rendered.</p>
+	<p>[Diagram here] If one of the face nodes is outside the plane then two new faces are generated. If two of the face nodes are outside of the plane then one new smaller face is generated. </p>
+
+	<p> To work out if a node is in or outside a plane, a function is used to calculate the distance of a node to the nearest part of the plane. If this distance is positive then it is within the plane, if it is negative then it is outside the plane.</p>
+
+	<p>To generate new clipped triangles, a function is used to see at what 3D point the edges of the original triangle intersect the plane. These new points along with the inside points of the original triangle are used in the new triangle.</p>
+
+	<p>This function can be reused to clip nodes against multiple sides of the viewing frustrum. However, for now I have decided to only clip against the near plane.</p>
+
+	<iframe src="https://www.youtube.com/embed/Ez8MPf6TmJY?si=LEY1wCtlwt25Gpar" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+	<h3>Perspective</h3>
+
+	<p>Perspective is used to make objects on the screen appear smaller if they are further away and larger if they are nearer to the camera. This means that nodes are scaled towards the center of the screen, the larger the Z coordinate. </p>
+
+	<h3>Backface Culling</h3>
+
+	<p>
+
+	Backface culling is used to makesure that faces facing away from the camera are not rendered. This is to increase the performance of the program.
+
+	If a triangle is facing away from the camera, the area is negative and positive if it is facing towards the camera. The area is determined using the shoelace algorithm.
+
+	</p>
+
+	<h3>Shading and Lighting</h3>
+
+	<p>Shading and lighting is used to darken or lighten faces of a model, giving the illusion of depth to the model. The faces are shaded to different levels depending on the amount of light falling onto that face.</p>
+
+	<p>There are different types of shading, however, I have only implemented the basic form of shading - 'flat' shading.</p>
+
+	<p>This type of shading works on the principle that a face is lighter when facing towards a light and darker when facing away from a light. This is calculated using the light position and a face normal.</p>
+
+	<p>For each face in the model, the dot product is calculated between the face normal and the normalised 3D vector between the face center and the light source. This gives a cos theta value which is used to multiply the material RGB values by.</p>
+
+	<iframe width="560" height="315" src="https://www.youtube.com/embed/ffGhWUPw3O8?si=8xV7CV8HKZDqd7p_" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+
+</div>
+</body>
+</html>
